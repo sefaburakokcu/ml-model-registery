@@ -17,10 +17,10 @@ def save_uploadedfile(uploaded_file, save_dir):
           
      with open(os.path.join(save_dir, uploaded_file.name), "wb") as f:
          f.write(uploaded_file.getbuffer())
-     return st.success(f"Saved File:{uploaded_file.name} to save_dir")
+     return st.success(f"Saved File: {uploaded_file.name} to {save_dir}")
  
     
-save_dir = r'D:\Users\Sefaburak\Desktop\projects\ml-model-registery\savem' 
+save_dir = r'D:\Users\Sefaburak\Desktop\projects\ml-model-registery\.savemm' 
  
 file = st.file_uploader("Upload A Model",type=MODEL_EXTS)
 

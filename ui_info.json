@@ -1,0 +1,19 @@
+{
+      "task_names": [
+            "face_detection",
+            "object_detection",
+            "face_recognition",
+            "Person_reid",
+            "Vehicle_reid",
+            "object_detection_color",
+            "object_detection_angle",
+            "facial_lanmarks_extraction",
+            "face_quality_assessment",
+            "face_tracking",
+            "object_tracking",
+            "face_detection_landmark_quality",
+            "face_detection_landmark",
+            "other",
+            "New_task"
+      ]
+}

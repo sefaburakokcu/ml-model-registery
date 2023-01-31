@@ -1,9 +1,13 @@
-credentials:
-  usernames:
 cookie:
   expiry_days: 30
   key: some_signature_key
   name: some_cookie_name
+credentials:
+  usernames:
+    joedoe:
+      email: joedoe@gmail.com
+      name: Joe Doe
+      password: $2b$12$DcvsmF3Dfx7VqsYIRmbWjeTcwJjsNFyck5/B4xeSskldDOGT2bSfm
 preauthorized:
   emails:
-  - joe@unknown.com  # Put preauthorized e-mails here
+  - joe@unknown.com

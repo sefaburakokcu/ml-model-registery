@@ -1,0 +1,9 @@
+credentials:
+  usernames:
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+preauthorized:
+  emails:
+  - joe@unknown.com  # Put preauthorized e-mails here

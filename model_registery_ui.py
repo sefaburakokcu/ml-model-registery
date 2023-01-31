@@ -9,7 +9,9 @@ import glob
 import datetime
 import pathlib
 import json
+import yaml
 import streamlit as st
+import streamlit_authenticator as stauth
 import numpy as np
 import pandas as pd
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -341,8 +343,16 @@ def delete_files(db, model_folders):
         db.delete_model_doc(model_path)
     # remove also from db
 
-def main():
-    pass
+@st.cache(allow_output_mutation=True, hash_funcs={"_thread.RLock": lambda _: None})
+def load_credentials(config_file="./.credentials/config.yaml"):
+    with open(config_file) as file:
+        config = yaml.load(file, Loader=yaml.SafeLoader)
+    return config
+
+
+def update_credentials(config, config_file="./.credentials/config.yaml"):
+    with open(config_file, 'w') as file:
+        yaml.dump(config, file, default_flow_style=False)
 
 
 if __name__ == "__main__":
@@ -358,64 +368,111 @@ if __name__ == "__main__":
     reload_data = st.session_state["reload_data"]
 
     db = init_connection(db_name, index_name)
+    config = load_credentials("./.credentials/config.yaml")
+
+    authenticator = stauth.Authenticate(
+        config['credentials'],
+        config['cookie']['name'],
+        config['cookie']['key'],
+        config['cookie']['expiry_days'],
+        config['preauthorized']
+    )
+
+    if "authentication_status" not in st.session_state:
+        st.session_state["authentication_status"] = None
+
+    if "name" not in st.session_state:
+        st.session_state["name"] = None
+
+    if "username" not in st.session_state:
+        st.session_state["username"] = None
+
 
     TABS = ['Model Register', 'Model HUB']
-    
-    st.sidebar.title("Machine Learning Model Registery")
-    active_tab = st.sidebar.radio("Menu:", TABS)
-    
-    if active_tab == 'Model Register':
-             model_register(db)
-             
-    elif active_tab == 'Model HUB':
-        
-        st.title("Model HUB")
 
-        with st.sidebar.form(key='Form1'):
-            filtered_registerer = st.multiselect("Registerer", REGISTERERS)
-            filtered_tasks = st.multiselect("Tasks", task_names)
-            filtered_model_for = st.multiselect("Model For", ["development", "production"])
-            filtered_model_format = st.multiselect("Model Format", set(MODEL_MAPPER.values()))
-            filtered_tags = st.multiselect("Tags", task_names)
-            submitted = st.form_submit_button(label='filter models')
 
-        filtered_models = get_filtered_models(db.index_info, filtered_registerer, filtered_tasks, filtered_model_format,
-                                              filtered_model_for, filtered_tags)
+    if st.session_state["authentication_status"] is None:
+        st.title("Machine Learning Model Registery")
+        st.session_state["name"], st.session_state["authentication_status"], st.session_state["username"] = authenticator.login('Login', 'main')
+        st.warning('Please enter your username and password')
+        with st.expander("*New to Model Registry? Sign up.*"):
+            try:
+                if authenticator.register_user('Register user', preauthorization=False):
+                    st.success('User registered successfully')
+                update_credentials(config, config_file="./.credentials/config.yaml")
+            except Exception as e:
+                st.error(e)
 
-        data = get_models_dataframe(filtered_models)
-        df = pd.DataFrame(data)
+    elif not st.session_state["authentication_status"]:
+        st.title("Machine Learning Model Registery")
+        st.session_state["name"], st.session_state["authentication_status"], st.session_state["username"] = authenticator.login('Login', 'main')
+        st.error('Username/password is incorrect')
+        with st.expander("*New to Model Registry? Sign up.*"):
+            try:
+                if authenticator.register_user('Register user', preauthorization=False):
+                    st.success('User registered successfully')
+                update_credentials(config, config_file="./.credentials/config.yaml")
+            except Exception as e:
+                st.error(e)
+    else:
+        with st.sidebar:
+            st.title("Machine Learning Model Registery")
+            active_tab = st.radio("Menu:", TABS)
+            authenticator.logout('Logout', 'main')
+            st.write(f"Welcome *{st.session_state['name']}*")
 
-        gd = GridOptionsBuilder.from_dataframe(df)
-        gd.configure_selection(selection_mode='multiple', use_checkbox=True)
-        gridoptions = gd.build()
+        if active_tab == 'Model Register':
+                 model_register(db)
 
-        grid_table = AgGrid(df, height=250, gridOptions=gridoptions,
-                            update_mode=GridUpdateMode.GRID_CHANGED,
-                            reload_data=reload_data,
-                            fit_columns_on_grid_load=True)
-        selected_rows = grid_table["selected_rows"]
-        st.session_state["reload_data"] = False
-        reload_data = st.session_state["reload_data"]
+        elif active_tab == 'Model HUB':
 
-        col1, _, _, col2 = st.columns([1, 0.5, 0.3, 0.2])
+            st.title("Model HUB")
 
-        with col1:
-            download_button = st.button('prepare for download')
-            if download_button:
-                model_folders = []
-                st.info(f"Preparing models for downloading...")
-                for selected_row in selected_rows:
-                    row_idx = selected_row['_selectedRowNodeInfo']['nodeRowIndex']
-                    model_folders.append(db.get_full_path(selected_row["model_path"]))
-                download_files(model_folders, zip_name="models.zip")
-                st.session_state["reload_data"] = True
+            with st.sidebar.form(key='Form1'):
+                filtered_registerer = st.multiselect("Registerer", REGISTERERS)
+                filtered_tasks = st.multiselect("Tasks", task_names)
+                filtered_model_for = st.multiselect("Model For", ["development", "production"])
+                filtered_model_format = st.multiselect("Model Format", set(MODEL_MAPPER.values()))
+                filtered_tags = st.multiselect("Tags", task_names)
+                submitted = st.form_submit_button(label='filter models')
 
-        with col2:
-            delete_button = st.button('delete')
-            if delete_button:
-                model_folders = []
-                for selected_row in selected_rows:
-                    row_idx = selected_row['_selectedRowNodeInfo']['nodeRowIndex']
-                    model_folders.append(selected_row["model_path"])
-                delete_files(db, model_folders)
-                st.session_state["reload_data"] = True
+            filtered_models = get_filtered_models(db.index_info, filtered_registerer, filtered_tasks, filtered_model_format,
+                                                  filtered_model_for, filtered_tags)
+
+            data = get_models_dataframe(filtered_models)
+            df = pd.DataFrame(data)
+
+            gd = GridOptionsBuilder.from_dataframe(df)
+            gd.configure_selection(selection_mode='multiple', use_checkbox=True)
+            gridoptions = gd.build()
+
+            grid_table = AgGrid(df, height=250, gridOptions=gridoptions,
+                                update_mode=GridUpdateMode.GRID_CHANGED,
+                                reload_data=reload_data,
+                                fit_columns_on_grid_load=True)
+            selected_rows = grid_table["selected_rows"]
+            st.session_state["reload_data"] = False
+            reload_data = st.session_state["reload_data"]
+
+            col1, _, _, col2 = st.columns([1, 0.5, 0.3, 0.2])
+
+            with col1:
+                download_button = st.button('prepare for download')
+                if download_button:
+                    model_folders = []
+                    st.info(f"Preparing models for downloading...")
+                    for selected_row in selected_rows:
+                        row_idx = selected_row['_selectedRowNodeInfo']['nodeRowIndex']
+                        model_folders.append(db.get_full_path(selected_row["model_path"]))
+                    download_files(model_folders, zip_name="models.zip")
+                    st.session_state["reload_data"] = True
+
+            with col2:
+                delete_button = st.button('delete')
+                if delete_button:
+                    model_folders = []
+                    for selected_row in selected_rows:
+                        row_idx = selected_row['_selectedRowNodeInfo']['nodeRowIndex']
+                        model_folders.append(selected_row["model_path"])
+                    delete_files(db, model_folders)
+                    st.session_state["reload_data"] = True

@@ -13,6 +13,12 @@ This project is designed for storing and organizing Machine Learning models via 
 
 ## Authentication
 
+Initial authenticated user information:
+
+- name: Joe Doe
+- username: joedoe
+- password: 12345
+
 Credentials can be found in "./.credentials/config.yaml".
-Firstly, define a list of preauthorized emails of users who can register and add their credentials to the configuration file with the use of the sign up page.
+Firtly, define a list of preauthorized emails of users who can register and add their credentials to the configuration file with the use of the sign up page.
 

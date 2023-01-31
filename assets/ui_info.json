@@ -3,8 +3,8 @@
             "face_detection",
             "object_detection",
             "face_recognition",
-            "Person_reid",
-            "Vehicle_reid",
+            "person_reid",
+            "vehicle_reid",
             "object_detection_color",
             "object_detection_angle",
             "facial_lanmarks_extraction",
@@ -13,7 +13,6 @@
             "object_tracking",
             "face_detection_landmark_quality",
             "face_detection_landmark",
-            "other",
-            "New_task"
+            "other"
       ]
 }

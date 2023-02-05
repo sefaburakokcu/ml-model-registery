@@ -20,11 +20,10 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 
 from utils.json_db_handler import JsonDbHandle
 
-st.set_page_config(page_title="Machine Learning Model Registery",
+st.set_page_config(page_title="Machine Learning Model Registry",
                    #page_icon="logo.png",
                    layout="wide")
 
-DB_NAME = "ml_model_registery_db"
 PAIR_MODEL_EXTS = [[".caffemodel", ".prototxt"], [".params", ".json"]]
 SINGLE_MODEL_EXTS = [".pth", ".pt", ".onnx", ".pb", ".wk", ".engine", ".trt",
                      ".tflite"]
@@ -436,32 +435,40 @@ if __name__ == "__main__":
 
     TABS = ['Model Register', 'Model HUB']
 
-    if st.session_state["authentication_status"] is None:
-        st.title("Machine Learning Model Registery")
-        st.session_state["name"], st.session_state["authentication_status"], st.session_state["username"] = authenticator.login('Login', 'main')
-        st.warning('Please enter your username and password')
-        with st.expander("*New to Model Registry? Sign up.*"):
-            try:
-                if authenticator.register_user('Register user', preauthorization=False):
-                    st.success('User registered successfully')
-                update_credentials(config, config_file="./.credentials/config.yaml")
-            except Exception as e:
-                st.error(e)
+    title = "Machine Learning Model Registry"
 
-    elif not st.session_state["authentication_status"]:
-        st.title("Machine Learning Model Registery")
-        st.session_state["name"], st.session_state["authentication_status"], st.session_state["username"] = authenticator.login('Login', 'main')
-        st.error('Username/password is incorrect')
-        with st.expander("*New to Model Registry? Sign up.*"):
-            try:
-                if authenticator.register_user('Register user', preauthorization=False):
-                    st.success('User registered successfully')
-                update_credentials(config, config_file="./.credentials/config.yaml")
-            except Exception as e:
-                st.error(e)
-    else:
+    _, col2, _ = st.columns([1, 1, 1])
+
+    with col2:
+        titleholder = st.empty()
+        titleholder.title(title)
+        st.session_state["name"], st.session_state["authentication_status"], st.session_state[
+            "username"] = authenticator.login('Login', 'main')
+        if st.session_state["authentication_status"] is None:
+            st.warning('Please enter your username and password')
+            with st.expander("*New to Model Registry? Sign up.*"):
+                try:
+                    if authenticator.register_user('Register user', preauthorization=False):
+                        st.success('User registered successfully')
+                    update_credentials(config, config_file="./.credentials/config.yaml")
+                except Exception as e:
+                    st.error(e)
+
+        elif not st.session_state["authentication_status"]:
+            st.error('Username/password is incorrect')
+            with st.expander("*New to Model Registry? Sign up.*"):
+                try:
+                    if authenticator.register_user('Register user', preauthorization=False):
+                        st.success('User registered successfully')
+                    update_credentials(config, config_file="./.credentials/config.yaml")
+                except Exception as e:
+                    st.error(e)
+
+    if st.session_state["authentication_status"]:
+        titleholder.empty()
+        st.title(title)
         with st.sidebar:
-            st.title("Machine Learning Model Registery")
+            st.title(title)
             active_tab = st.radio("Menu:", TABS)
             authenticator.logout('Logout', 'main')
             st.write(f"Welcome *{st.session_state['name']}*")
